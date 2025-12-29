@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>バトル</title>
+<title>Battle</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -11,21 +11,20 @@
 <body>
 
 <h2 id="title"></h2>
-<p id="info"></p>
-<p id="statusMsg"></p>
+<p id="status"></p>
 
-<div id="playerUI">
-  <input id="input" placeholder="文字列を入力">
-  <button id="run">実行</button>
+<div id="inputArea" style="display:none">
+  <input id="textInput" placeholder="文字を入力">
+  <button id="runBtn">実行</button>
 </div>
-
-<button id="rematch" style="display:none">再戦</button>
-<button id="leave">退出</button>
 
 <pre id="result" style="display:none"></pre>
 
+<button id="rematchBtn" style="display:none">再戦</button>
+<button id="leaveBtn">退出</button>
+
 <script>
-/* Firebase */
+/* ===== Firebase ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
   authDomain: "create-tier.firebaseapp.com",
@@ -35,138 +34,162 @@ const firebaseConfig = {
   appId: "1:267436992720:web:fe5c825719bce282a8d6d5"
 };
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.database();
 
-/* URL */
+/* ===== URL ===== */
 const params = new URLSearchParams(location.search);
 const roomId = params.get("room");
-const name = params.get("name");
+const playerName = params.get("name");
 const mode = params.get("mode");
 
-/* DOM */
-const statusMsg = document.getElementById("statusMsg");
-const playerUI = document.getElementById("playerUI");
-const runBtn = document.getElementById("run");
-const rematchBtn = document.getElementById("rematch");
-const leaveBtn = document.getElementById("leave");
-const result = document.getElementById("result");
+/* ===== DOM ===== */
+const statusEl = document.getElementById("status");
+const inputArea = document.getElementById("inputArea");
+const textInput = document.getElementById("textInput");
+const runBtn = document.getElementById("runBtn");
+const resultEl = document.getElementById("result");
+const rematchBtn = document.getElementById("rematchBtn");
+const leaveBtn = document.getElementById("leaveBtn");
 
-/* 状態フラグ */
+/* ===== 状態 ===== */
+let uid = null;
 let hasAppeared = false;
-let roomListener = null;
+let roomRef = null;
+let playersRef = null;
 
-auth.signInAnonymously().then(({ user }) => {
-  const uid = user.uid;
-  const roomRef = db.ref(`rooms/${roomId}`);
-  const playersRef = roomRef.child("players");
+/* ===== 認証 ===== */
+auth.signInAnonymously().then(res => {
+  uid = res.user.uid;
 
-  /* 参加 */
+  roomRef = db.ref(`rooms/${roomId}`);
+  playersRef = roomRef.child("players");
+
   if (mode === "play") {
     playersRef.child(uid).set({
-      name,
+      name: playerName,
       submitted: false,
       result: ""
     });
   }
 
-  /* 実行 */
-  runBtn.onclick = () => {
-    const text = input.value.trim();
-    if (!text) return;
-    playersRef.child(uid).update({
-      submitted: true,
-      result: shuffle(text)
-    });
-  };
+  setupListeners();
+});
 
-  /* 再戦 */
-  rematchBtn.onclick = () => {
-    playersRef.once("value", snap => {
-      snap.forEach(p => {
-        p.ref.update({ submitted: false, result: "" });
+/* ===== 実行 ===== */
+runBtn.onclick = () => {
+  const text = textInput.value.trim();
+  if (!text) return;
+
+  playersRef.child(uid).update({
+    submitted: true,
+    result: shuffle(text)
+  });
+};
+
+/* ===== 再戦 ===== */
+rematchBtn.onclick = () => {
+  playersRef.once("value", snap => {
+    snap.forEach(p => {
+      p.ref.update({
+        submitted: false,
+        result: ""
       });
     });
-  };
+  });
+};
 
-  /* 退出 */
-  leaveBtn.onclick = () => {
-    cleanup();
-    playersRef.child(uid).remove().then(() => {
-      location.href = "index.html";
-    });
-  };
+/* ===== 退出 ===== */
+leaveBtn.onclick = () => {
+  cleanup();
+  playersRef.child(uid).remove().then(() => {
+    location.href = "index.html";
+  });
+};
 
-  /* 監視 */
-  roomListener = roomRef.on("value", snap => {
+/* ===== 監視 ===== */
+function setupListeners() {
+  roomRef.on("value", snap => {
     const data = snap.val();
     if (!data || !data.players) return;
 
     const players = data.players;
+    const ids = Object.keys(players);
 
-    // 👇 一度でも見えたら true
-    if (players[uid]) {
-      hasAppeared = true;
-    }
+    if (players[uid]) hasAppeared = true;
 
-    // 👇 出現後に消えたら「退出」
+    /* 自分が消えた＝退出確定 */
     if (hasAppeared && !players[uid]) {
       cleanup();
       location.href = "index.html";
       return;
     }
 
-    const others = Object.entries(players).filter(([k]) => k !== uid);
+    /* 0人 → ルーム削除 */
+    if (ids.length === 0) {
+      roomRef.remove();
+      return;
+    }
 
-    if (others.length === 0) {
-      statusMsg.textContent = "対戦相手の参加を待っています…";
-      playerUI.style.display = "none";
-      result.style.display = "none";
+    /* 1人 → 初期状態 */
+    if (ids.length === 1) {
+      const onlyUid = ids[0];
+      playersRef.child(onlyUid).update({
+        submitted: false,
+        result: ""
+      });
+
+      statusEl.textContent = "対戦相手の参加を待っています…";
+      inputArea.style.display = "none";
+      resultEl.style.display = "none";
       rematchBtn.style.display = "none";
       return;
     }
 
+    /* 2人対戦 */
     const me = players[uid];
-    const opponent = others[0][1];
+    const opponent = ids.find(id => id !== uid);
+    const other = players[opponent];
 
-    if (!me.submitted && !opponent.submitted) {
-      statusMsg.textContent = "入力して「実行」を押してください";
-      playerUI.style.display = "block";
-    } else if (!me.submitted && opponent.submitted) {
-      statusMsg.textContent = "相手は入力済みです。入力してください";
-      playerUI.style.display = "block";
-    } else if (me.submitted && !opponent.submitted) {
-      statusMsg.textContent = "相手の入力を待っています…";
-      playerUI.style.display = "none";
+    if (!me.submitted && !other.submitted) {
+      statusEl.textContent = "入力して「実行」を押してください";
+      inputArea.style.display = "block";
+      resultEl.style.display = "none";
+      rematchBtn.style.display = "none";
+    } else if (!me.submitted && other.submitted) {
+      statusEl.textContent = "相手は入力済みです。入力してください";
+      inputArea.style.display = "block";
+      resultEl.style.display = "none";
+    } else if (me.submitted && !other.submitted) {
+      statusEl.textContent = "相手の入力を待っています…";
+      inputArea.style.display = "none";
+      resultEl.style.display = "none";
     } else {
-      statusMsg.textContent = "結果発表！";
-      playerUI.style.display = "none";
-      result.style.display = "block";
-      result.textContent =
-        `${me.name}: ${me.result}\n${opponent.name}: ${opponent.result}`;
+      statusEl.textContent = "結果発表！";
+      inputArea.style.display = "none";
+      resultEl.style.display = "block";
       rematchBtn.style.display = "inline";
-      return;
-    }
 
-    result.style.display = "none";
-    rematchBtn.style.display = "none";
+      resultEl.textContent =
+        `${me.name}: ${me.result}\n${other.name}: ${other.result}`;
+    }
   });
+}
 
-  function cleanup() {
-    if (roomListener) {
-      roomRef.off("value", roomListener);
-      roomListener = null;
-    }
-  }
-});
+/* ===== 後始末 ===== */
+function cleanup() {
+  if (roomRef) roomRef.off();
+}
 
+/* ===== シャッフル ===== */
 function shuffle(str) {
-  const a = str.split("");
-  for (let i = a.length - 1; i > 0; i--) {
+  const arr = str.split("");
+  for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return a.join("");
+  return arr.join("");
 }
 </script>
 </body>
