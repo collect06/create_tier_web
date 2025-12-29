@@ -112,7 +112,7 @@ auth.signInAnonymously().then(({ user }) => {
     });
   };
 
-  // 再戦
+  // 再戦（※退出とは完全に別）
   rematchBtn.onclick = () => {
     playersRef.once("value", snap => {
       snap.forEach(p => {
@@ -124,68 +124,83 @@ auth.signInAnonymously().then(({ user }) => {
     });
   };
 
-  // 退出
+  // 退出（即 index へ）
   leaveBtn.onclick = () => {
-    cleanupAndExit();
+    playersRef.child(uid).remove().then(() => {
+      location.href = "index.html";
+    });
   };
 
-  // 状態監視（ここが核心）
+  // =====================
+  // 状態監視（安定版）
+  // =====================
   roomRef.on("value", snap => {
     const data = snap.val();
     if (!data || !data.players) return;
 
-    const players = Object.values(data.players);
-    const count = players.length;
+    const players = data.players;
+    const me = players[uid];
+    const others = Object.entries(players).filter(([k]) => k !== uid);
 
-    let status = "waiting";
-    if (count === 2) {
-      const submittedCount = players.filter(p => p.submitted).length;
-      if (submittedCount === 0) status = "ready";
-      else if (submittedCount === 1) status = "submitted";
-      else status = "revealed";
-    }
-
-    // 表示メッセージ
-    statusMsg.textContent = {
-      waiting: "対戦相手の参加を待っています（かき）…",
-      ready: "入力して「実行」を押してください（んぽ）",
-      submitted: "相手の入力を待っています（かき）…",
-      revealed: "結果発表！"
-    }[status];
-
-    // UI制御
-    if (status === "revealed") {
-      playerUI.style.display = "none";
-      runBtn.style.display = "none";
-      result.style.display = "block";
-      result.textContent =
-        players.map(p => `${p.name}: ${p.result}`).join("\n");
-      rematchBtn.style.display = mode === "play" ? "inline" : "none";
-    } else {
-      playerUI.style.display = mode === "play" ? "block" : "none";
-      runBtn.style.display = mode === "play" ? "inline" : "none";
-      result.style.display = "none";
-      rematchBtn.style.display = "none";
-    }
-  });
-
-  // 自動退出
-  window.addEventListener("beforeunload", cleanupAndExit);
-
-  function cleanupAndExit() {
-    if (mode === "watch") {
-      spectatorsRef.child(uid).remove();
+    // 自分がいない＝退出後
+    if (!me && mode === "play") {
+      location.href = "index.html";
       return;
     }
 
-    playersRef.child(uid).remove().then(() => {
-      playersRef.once("value", snap => {
-        if (!snap.exists()) {
-          roomRef.remove();
-        }
-      });
-    });
-  }
+    // 人数1人
+    if (Object.keys(players).length < 2) {
+      statusMsg.textContent = "対戦相手の参加を待っています…";
+      playerUI.style.display = "none";
+      result.style.display = "none";
+      rematchBtn.style.display = "none";
+      return;
+    }
+
+    const opponent = others[0][1];
+
+    // 両者未提出
+    if (!me.submitted && !opponent.submitted) {
+      statusMsg.textContent = "入力して「実行」を押してください";
+      playerUI.style.display = "block";
+      result.style.display = "none";
+      rematchBtn.style.display = "none";
+      return;
+    }
+
+    // 自分だけ未提出
+    if (!me.submitted && opponent.submitted) {
+      statusMsg.textContent = "相手は入力済みです。入力してください";
+      playerUI.style.display = "block";
+      result.style.display = "none";
+      rematchBtn.style.display = "none";
+      return;
+    }
+
+    // 自分だけ提出済み
+    if (me.submitted && !opponent.submitted) {
+      statusMsg.textContent = "相手の入力を待っています…";
+      playerUI.style.display = "none";
+      result.style.display = "none";
+      rematchBtn.style.display = "none";
+      return;
+    }
+
+    // 両者提出済み
+    statusMsg.textContent = "結果発表！";
+    playerUI.style.display = "none";
+    result.style.display = "block";
+    result.textContent =
+      `${me.name}: ${me.result}\n${opponent.name}: ${opponent.result}`;
+    rematchBtn.style.display = mode === "play" ? "inline" : "none";
+  });
+
+  // 観戦退出
+  window.addEventListener("beforeunload", () => {
+    if (mode === "watch") {
+      spectatorsRef.child(uid).remove();
+    }
+  });
 });
 
 // =====================
