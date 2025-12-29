@@ -165,7 +165,7 @@ function setupListeners() {
       statusEl.textContent = "相手の入力を待っていますかき…";
       inputArea.style.display = "none";
       resultEl.style.display = "none";
-    } else {
+    } else if (me.submitted && other.submitted &&　me.result && other.result) {
       statusEl.textContent = "結果発表！";
       inputArea.style.display = "none";
       resultEl.style.display = "block";
@@ -194,6 +194,7 @@ function shuffle(str) {
 
 /* ===== 点数計算（役） ===== */
 function calcScore(text) {
+  if (!text) return 0;
   let score = 0;
 
   // 役定義（ここを増やすだけ）
@@ -219,6 +220,7 @@ function calcScore(text) {
     { pattern: "おなてるがき", point: 5 },
     { pattern: "がきおなてる", point: 5 },
     { pattern: "なるおてがき", point: 5 },
+    { pattern: "おきながてる", point: 5 }
   ];
 
   hands.forEach(h => {
@@ -232,5 +234,6 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
 
 
