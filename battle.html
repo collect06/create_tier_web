@@ -10,18 +10,18 @@
 </head>
 <body>
 
-<h2 id="title"></h2>
+<h2 id="title">対戦ズリ</h2>
 <p id="status"></p>
 
 <div id="inputArea" style="display:none">
   <input id="textInput" placeholder="文字を入力">
-  <button id="runBtn">実行</button>
+  <button id="runBtn">対戦ながお</button>
 </div>
 
 <pre id="result" style="display:none"></pre>
 
-<button id="rematchBtn" style="display:none">再戦</button>
-<button id="leaveBtn">退出</button>
+<button id="rematchBtn" style="display:none">再戦ながお</button>
+<button id="leaveBtn">退出ながお</button>
 
 <script>
 /* ===== Firebase ===== */
@@ -140,7 +140,7 @@ function setupListeners() {
         result: ""
       });
 
-      statusEl.textContent = "対戦相手の参加を待っています…";
+      statusEl.textContent = "対戦相手の参加を待っていますかき…";
       inputArea.style.display = "none";
       resultEl.style.display = "none";
       rematchBtn.style.display = "none";
@@ -153,16 +153,16 @@ function setupListeners() {
     const other = players[opponent];
 
     if (!me.submitted && !other.submitted) {
-      statusEl.textContent = "入力して「実行」を押してください";
+      statusEl.textContent = "入力して「対戦ながお」を押してくださいんぽ";
       inputArea.style.display = "block";
       resultEl.style.display = "none";
       rematchBtn.style.display = "none";
     } else if (!me.submitted && other.submitted) {
-      statusEl.textContent = "相手は入力済みです。入力してください";
+      statusEl.textContent = "相手は入力済みです。入力してくださいんぽ";
       inputArea.style.display = "block";
       resultEl.style.display = "none";
     } else if (me.submitted && !other.submitted) {
-      statusEl.textContent = "相手の入力を待っています…";
+      statusEl.textContent = "相手の入力を待っていますかき…";
       inputArea.style.display = "none";
       resultEl.style.display = "none";
     } else {
@@ -194,3 +194,4 @@ function shuffle(str) {
 </script>
 </body>
 </html>
+
