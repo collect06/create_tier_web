@@ -25,6 +25,9 @@
 <pre id="result" style="display:none"></pre>
 
 <script>
+/* =====================
+   Firebase 設定
+===================== */
 const firebaseConfig = {
   apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
   authDomain: "create-tier.firebaseapp.com",
@@ -38,11 +41,17 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+/* =====================
+   URL パラメータ
+===================== */
 const params = new URLSearchParams(location.search);
 const roomId = params.get("room");
 const name = params.get("name");
-const mode = params.get("mode");
+const mode = params.get("mode"); // play / watch
 
+/* =====================
+   DOM
+===================== */
 const statusMsg = document.getElementById("statusMsg");
 const playerUI = document.getElementById("playerUI");
 const runBtn = document.getElementById("run");
@@ -50,18 +59,38 @@ const rematchBtn = document.getElementById("rematch");
 const leaveBtn = document.getElementById("leave");
 const result = document.getElementById("result");
 
+document.getElementById("title").textContent = `ルーム: ${roomId}`;
+document.getElementById("info").textContent =
+  mode === "watch" ? "観戦モード" : `プレイヤー: ${name}`;
+
+/* =====================
+   状態フラグ
+===================== */
+let hasJoined = false;
 let roomListener = null;
 
+/* =====================
+   ログイン
+===================== */
 auth.signInAnonymously().then(({ user }) => {
   const uid = user.uid;
 
   const roomRef = db.ref(`rooms/${roomId}`);
   const playersRef = roomRef.child("players");
+  const spectatorsRef = roomRef.child("spectators");
 
+  /* ===== 観戦 ===== */
+  if (mode === "watch") {
+    playerUI.style.display = "none";
+    runBtn.style.display = "none";
+    spectatorsRef.child(uid).set({ joinedAt: Date.now() });
+  }
+
+  /* ===== プレイヤー参加 ===== */
   if (mode === "play") {
     playersRef.once("value", snap => {
       if (snap.numChildren() >= 2) {
-        alert("満員です");
+        alert("この部屋は満員です");
         location.href = "index.html";
         return;
       }
@@ -69,51 +98,89 @@ auth.signInAnonymously().then(({ user }) => {
         name,
         submitted: false,
         result: ""
+      }).then(() => {
+        hasJoined = true;
       });
     });
   }
 
+  /* ===== 実行 ===== */
   runBtn.onclick = () => {
-    const v = input.value.trim();
-    if (!v) return;
+    const text = input.value.trim();
+    if (!text) return;
+
     playersRef.child(uid).update({
       submitted: true,
-      result: shuffle(v)
+      result: shuffle(text)
     });
   };
 
+  /* ===== 再戦 ===== */
   rematchBtn.onclick = () => {
     playersRef.once("value", snap => {
       snap.forEach(p => {
-        p.ref.update({ submitted: false, result: "" });
+        p.ref.update({
+          submitted: false,
+          result: ""
+        });
       });
     });
   };
 
+  /* ===== 退出 ===== */
   leaveBtn.onclick = () => {
     cleanup();
-    playersRef.child(uid).remove().then(() => {
-      location.href = "index.html";
-    });
+    if (mode === "watch") {
+      spectatorsRef.child(uid).remove().then(() => {
+        location.href = "index.html";
+      });
+    } else {
+      playersRef.child(uid).remove().then(() => {
+        location.href = "index.html";
+      });
+    }
   };
 
+  /* =====================
+     ルーム監視（核心）
+  ===================== */
   roomListener = roomRef.on("value", snap => {
     const data = snap.val();
     if (!data || !data.players) return;
 
     const players = data.players;
 
-    // 🔴 自分がもういない → 即終了
-    if (!players[uid]) {
+    /* --- 退出判定（入室途中を除外） --- */
+    if (hasJoined && mode === "play" && !players[uid]) {
       cleanup();
       location.href = "index.html";
       return;
     }
 
-    const me = players[uid];
-    const others = Object.values(players).filter(p => p !== me);
+    /* --- 観戦モード --- */
+    if (mode === "watch") {
+      const ps = Object.values(players);
+      if (ps.length < 2) {
+        statusMsg.textContent = "対戦相手の参加を待っています…";
+        result.style.display = "none";
+        return;
+      }
+      if (ps.every(p => p.submitted)) {
+        statusMsg.textContent = "結果発表！";
+        result.style.display = "block";
+        result.textContent =
+          ps.map(p => `${p.name}: ${p.result}`).join("\n");
+      } else {
+        statusMsg.textContent = "対戦中…";
+        result.style.display = "none";
+      }
+      return;
+    }
 
-    // 人数不足
+    /* --- プレイヤーモード --- */
+    const me = players[uid];
+    const others = Object.entries(players).filter(([k]) => k !== uid);
+
     if (others.length === 0) {
       statusMsg.textContent = "対戦相手の参加を待っています…";
       playerUI.style.display = "none";
@@ -122,9 +189,9 @@ auth.signInAnonymously().then(({ user }) => {
       return;
     }
 
-    const opponent = others[0];
+    const opponent = others[0][1];
 
-    // 表示分岐（完全に自分視点）
+    // 状態分岐（完全に自分視点）
     if (!me.submitted && !opponent.submitted) {
       statusMsg.textContent = "入力して「実行」を押してください";
       playerUI.style.display = "block";
@@ -148,6 +215,7 @@ auth.signInAnonymously().then(({ user }) => {
     rematchBtn.style.display = "none";
   });
 
+  /* ===== クリーンアップ ===== */
   function cleanup() {
     if (roomListener) {
       roomRef.off("value", roomListener);
@@ -156,13 +224,16 @@ auth.signInAnonymously().then(({ user }) => {
   }
 });
 
+/* =====================
+   シャッフル関数
+===================== */
 function shuffle(str) {
-  const a = str.split("");
-  for (let i = a.length - 1; i > 0; i--) {
+  const arr = str.split("");
+  for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return a.join("");
+  return arr.join("");
 }
 </script>
 </body>
