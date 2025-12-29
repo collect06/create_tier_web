@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>バトル</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<h2 id="title"></h2>
+<p id="info"></p>
+
+<div id="playerUI">
+  <input id="input" placeholder="文字列">
+  <button id="run">対戦ながお</button>
+  <button id="rematch" style="display:none">再戦</button>
+</div>
+
+<pre id="result" style="display:none"></pre>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
+  authDomain: "create-tier.firebaseapp.com",
+  projectId: "create-tier",
+  storageBucket: "create-tier.firebasestorage.app",
+  messagingSenderId: "267436992720",
+  appId: "1:267436992720:web:fe5c825719bce282a8d6d5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+const params = new URLSearchParams(location.search);
+const roomId = params.get("room");
+const name = params.get("name");
+const mode = params.get("mode"); // play / watch
+
+document.getElementById("title").textContent = `ルーム: ${roomId}`;
+document.getElementById("info").textContent =
+  mode === "watch" ? "観戦モード" : `プレイヤー: ${name}`;
+
+auth.signInAnonymously().then(({ user }) => {
+  const uid = user.uid;
+  const roomRef = db.ref(`rooms/${roomId}`);
+  const playersRef = roomRef.child("players");
+  const spectatorsRef = roomRef.child("spectators");
+
+  if (mode === "watch") {
+    spectatorsRef.child(uid).set({ joinedAt: Date.now() });
+    document.getElementById("playerUI").style.display = "none";
+  } else {
+    playersRef.once("value", snap => {
+      if (snap.numChildren() >= 2) {
+        alert("この部屋は満員です");
+        location.href = "index.html";
+        return;
+      }
+
+      playersRef.child(uid).set({
+        name,
+        submitted: false
+      });
+    });
+  }
+
+  document.getElementById("run").onclick = () => {
+    const text = input.value;
+    if (!text) return;
+
+    const result = shuffle(text);
+    playersRef.child(uid).update({
+      result,
+      submitted: true
+    });
+  };
+
+  document.getElementById("rematch").onclick = () => {
+    roomRef.child("players").once("value", snap => {
+      snap.forEach(p => {
+        p.ref.update({ submitted: false, result: "" });
+      });
+      roomRef.child("state").set({ status: "waiting" });
+      document.getElementById("result").style.display = "none";
+      document.getElementById("rematch").style.display = "none";
+    });
+  };
+
+  roomRef.on("value", snap => {
+    const data = snap.val();
+    if (!data || !data.players) return;
+
+    const players = Object.values(data.players);
+    const allSubmitted =
+      players.length === 2 && players.every(p => p.submitted);
+
+    if (allSubmitted) {
+      document.getElementById("result").style.display = "block";
+      document.getElementById("result").textContent =
+        players.map(p => `${p.name}: ${p.result}`).join("\n");
+      document.getElementById("rematch").style.display =
+        mode === "play" ? "inline" : "none";
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    if (mode === "watch") {
+      spectatorsRef.child(uid).remove();
+    } else {
+      playersRef.child(uid).remove().then(() => {
+        playersRef.once("value", snap => {
+          if (!snap.exists()) roomRef.remove();
+        });
+      });
+    }
+  });
+});
+
+function shuffle(str) {
+  const a = str.split("");
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.join("");
+}
+</script>
+</body>
+</html>
