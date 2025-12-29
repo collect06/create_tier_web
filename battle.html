@@ -25,11 +25,8 @@
 <pre id="result" style="display:none"></pre>
 
 <script>
-// =====================
-// Firebase
-// =====================
 const firebaseConfig = {
-apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
+  apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
   authDomain: "create-tier.firebaseapp.com",
   projectId: "create-tier",
   storageBucket: "create-tier.firebasestorage.app",
@@ -41,55 +38,30 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// =====================
-// URL
-// =====================
 const params = new URLSearchParams(location.search);
 const roomId = params.get("room");
 const name = params.get("name");
 const mode = params.get("mode");
 
-// =====================
-// DOM
-// =====================
-const title = document.getElementById("title");
-const info = document.getElementById("info");
 const statusMsg = document.getElementById("statusMsg");
-const input = document.getElementById("input");
+const playerUI = document.getElementById("playerUI");
 const runBtn = document.getElementById("run");
 const rematchBtn = document.getElementById("rematch");
 const leaveBtn = document.getElementById("leave");
 const result = document.getElementById("result");
-const playerUI = document.getElementById("playerUI");
 
-title.textContent = `ルーム: ${roomId}`;
-info.textContent = mode === "watch" ? "観戦モード" : `プレイヤー: ${name}`;
+let roomListener = null;
 
-if (mode === "watch") {
-  playerUI.style.display = "none";
-  runBtn.style.display = "none";
-}
-
-// =====================
-// ログイン
-// =====================
 auth.signInAnonymously().then(({ user }) => {
   const uid = user.uid;
 
   const roomRef = db.ref(`rooms/${roomId}`);
   const playersRef = roomRef.child("players");
-  const spectatorsRef = roomRef.child("spectators");
 
-  // 観戦
-  if (mode === "watch") {
-    spectatorsRef.child(uid).set({ joinedAt: Date.now() });
-  }
-
-  // プレイヤー参加
   if (mode === "play") {
     playersRef.once("value", snap => {
       if (snap.numChildren() >= 2) {
-        alert("この部屋は満員です");
+        alert("満員です");
         location.href = "index.html";
         return;
       }
@@ -101,55 +73,48 @@ auth.signInAnonymously().then(({ user }) => {
     });
   }
 
-  // 実行
   runBtn.onclick = () => {
-    const text = input.value.trim();
-    if (!text) return;
-
+    const v = input.value.trim();
+    if (!v) return;
     playersRef.child(uid).update({
       submitted: true,
-      result: shuffle(text)
+      result: shuffle(v)
     });
   };
 
-  // 再戦（※退出とは完全に別）
   rematchBtn.onclick = () => {
     playersRef.once("value", snap => {
       snap.forEach(p => {
-        p.ref.update({
-          submitted: false,
-          result: ""
-        });
+        p.ref.update({ submitted: false, result: "" });
       });
     });
   };
 
-  // 退出（即 index へ）
   leaveBtn.onclick = () => {
+    cleanup();
     playersRef.child(uid).remove().then(() => {
       location.href = "index.html";
     });
   };
 
-  // =====================
-  // 状態監視（安定版）
-  // =====================
-  roomRef.on("value", snap => {
+  roomListener = roomRef.on("value", snap => {
     const data = snap.val();
     if (!data || !data.players) return;
 
     const players = data.players;
-    const me = players[uid];
-    const others = Object.entries(players).filter(([k]) => k !== uid);
 
-    // 自分がいない＝退出後
-    if (!me && mode === "play") {
+    // 🔴 自分がもういない → 即終了
+    if (!players[uid]) {
+      cleanup();
       location.href = "index.html";
       return;
     }
 
-    // 人数1人
-    if (Object.keys(players).length < 2) {
+    const me = players[uid];
+    const others = Object.values(players).filter(p => p !== me);
+
+    // 人数不足
+    if (others.length === 0) {
       statusMsg.textContent = "対戦相手の参加を待っています…";
       playerUI.style.display = "none";
       result.style.display = "none";
@@ -157,55 +122,40 @@ auth.signInAnonymously().then(({ user }) => {
       return;
     }
 
-    const opponent = others[0][1];
+    const opponent = others[0];
 
-    // 両者未提出
+    // 表示分岐（完全に自分視点）
     if (!me.submitted && !opponent.submitted) {
       statusMsg.textContent = "入力して「実行」を押してください";
       playerUI.style.display = "block";
-      result.style.display = "none";
-      rematchBtn.style.display = "none";
-      return;
-    }
-
-    // 自分だけ未提出
-    if (!me.submitted && opponent.submitted) {
+    } else if (!me.submitted && opponent.submitted) {
       statusMsg.textContent = "相手は入力済みです。入力してください";
       playerUI.style.display = "block";
-      result.style.display = "none";
-      rematchBtn.style.display = "none";
-      return;
-    }
-
-    // 自分だけ提出済み
-    if (me.submitted && !opponent.submitted) {
+    } else if (me.submitted && !opponent.submitted) {
       statusMsg.textContent = "相手の入力を待っています…";
       playerUI.style.display = "none";
-      result.style.display = "none";
-      rematchBtn.style.display = "none";
+    } else {
+      statusMsg.textContent = "結果発表！";
+      playerUI.style.display = "none";
+      result.style.display = "block";
+      result.textContent =
+        `${me.name}: ${me.result}\n${opponent.name}: ${opponent.result}`;
+      rematchBtn.style.display = "inline";
       return;
     }
 
-    // 両者提出済み
-    statusMsg.textContent = "結果発表！";
-    playerUI.style.display = "none";
-    result.style.display = "block";
-    result.textContent =
-      `${me.name}: ${me.result}\n${opponent.name}: ${opponent.result}`;
-    rematchBtn.style.display = mode === "play" ? "inline" : "none";
+    result.style.display = "none";
+    rematchBtn.style.display = "none";
   });
 
-  // 観戦退出
-  window.addEventListener("beforeunload", () => {
-    if (mode === "watch") {
-      spectatorsRef.child(uid).remove();
+  function cleanup() {
+    if (roomListener) {
+      roomRef.off("value", roomListener);
+      roomListener = null;
     }
-  });
+  }
 });
 
-// =====================
-// シャッフル
-// =====================
 function shuffle(str) {
   const a = str.split("");
   for (let i = a.length - 1; i > 0; i--) {
