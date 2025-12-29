@@ -191,7 +191,46 @@ function shuffle(str) {
   }
   return arr.join("");
 }
+
+/* ===== 点数計算（役） ===== */
+function calcScore(text) {
+  let score = 0;
+
+  // 役定義（ここを増やすだけ）
+  const hands = [
+    { pattern: "なお", point: 1 },
+    { pattern: "おな", point: 1 },
+    { pattern: "ながお", point: 2 },
+    { pattern: "てるき", point: 2 },
+    { pattern: "てるお", point: 2 },
+    { pattern: "ながき", point: 2 },
+    { pattern: "ながてる", point: 3 },
+    { pattern: "ながおてるき", point: 5 },
+    { pattern: "ながおきてる", point: 5 },
+    { pattern: "なおがきてる", point: 5 },
+    { pattern: "おながきてる", point: 5 },
+    { pattern: "きてるおなが", point: 5 },
+    { pattern: "てるきながお", point: 5 },
+    { pattern: "おてがるなき", point: 5 },
+    { pattern: "なきがおてる", point: 5 },
+    { pattern: "てきがおなる", point: 5 },
+    { pattern: "おなるてきが", point: 5 },
+    { pattern: "てるおながき", point: 5 },
+    { pattern: "おなてるがき", point: 5 },
+    { pattern: "がきおなてる", point: 5 },
+    { pattern: "なるおてがき", point: 5 },
+  ];
+
+  hands.forEach(h => {
+    if (text.includes(h.pattern)) {
+      score += h.point;
+    }
+  });
+
+  return score;
+}
 </script>
 </body>
 </html>
+
 
