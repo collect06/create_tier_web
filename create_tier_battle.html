@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ランダム文字列対戦</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body { font-family: sans-serif; }
+textarea { width: 300px; height: 100px; }
+.result { margin-top: 10px; font-weight: bold; }
+</style>
+</head>
+
+<body>
+<h2>ランダム文字列対戦</h2>
+
+<label>
+  プレイヤー:
+  <select id="player">
+    <option value="player1">player1</option>
+    <option value="player2">player2</option>
+  </select>
+</label>
+
+<br><br>
+
+<textarea id="inputText" placeholder="文字列を入力（例: abcdef）"></textarea><br>
+<button id="runBtn">実行</button>
+
+<div class="result">自分の結果: <span id="myResult"></span></div>
+<div class="result">相手の結果: <span id="otherResult"></span></div>
+
+<script>
+// =====================
+// Firebase 設定（ここだけ差し替え）
+// =====================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// =====================
+// ランダム化関数（元HTML流用）
+// =====================
+function shuffle(str) {
+  const chars = str.split("");
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
+
+// =====================
+// 実行ボタン
+// =====================
+document.getElementById("runBtn").addEventListener("click", () => {
+  const text = document.getElementById("inputText").value;
+  if (!text) return;
+
+  const result = shuffle(text);
+  document.getElementById("myResult").textContent = result;
+
+  const me = document.getElementById("player").value;
+  db.ref("room/" + me).set(result);
+});
+
+// =====================
+// 相手の結果を監視
+// =====================
+const playerSelect = document.getElementById("player");
+
+function watchOther() {
+  const me = playerSelect.value;
+  const other = me === "player1" ? "player2" : "player1";
+
+  db.ref("room/" + other).on("value", snap => {
+    document.getElementById("otherResult").textContent =
+      snap.val() ?? "";
+  });
+}
+
+playerSelect.addEventListener("change", watchOther);
+watchOther();
+</script>
+</body>
+</html>
