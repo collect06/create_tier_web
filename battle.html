@@ -147,33 +147,58 @@ function setupListeners() {
       return;
     }
 
-    /* 2人対戦 */
-    const me = players[uid];
-    const opponent = ids.find(id => id !== uid);
-    const other = players[opponent];
+    /* ===== 2人対戦 ===== */
+const me = players[uid];
+const opponentId = ids.find(id => id !== uid);
+const other = players[opponentId];
 
-    if (!me.submitted && !other.submitted) {
-      statusEl.textContent = "入力して「対戦ながお」を押してくださいんぽ";
-      inputArea.style.display = "block";
-      resultEl.style.display = "none";
-      rematchBtn.style.display = "none";
-    } else if (!me.submitted && other.submitted) {
-      statusEl.textContent = "相手は入力済みです。入力してくださいんぽ";
-      inputArea.style.display = "block";
-      resultEl.style.display = "none";
-    } else if (me.submitted && !other.submitted) {
-      statusEl.textContent = "相手の入力を待っていますかき…";
-      inputArea.style.display = "none";
-      resultEl.style.display = "none";
-    } else if (me.submitted && other.submitted &&　me.result && other.result) {
-      statusEl.textContent = "結果発表！";
-      inputArea.style.display = "none";
-      resultEl.style.display = "block";
-      rematchBtn.style.display = "inline";
+/* 両者未実行 */
+if (!me.submitted && !other.submitted) {
+  statusEl.textContent = "入力して「対戦ながお」を押してくださいんぽ";
+  inputArea.style.display = "block";
+  resultEl.style.display = "none";
+  rematchBtn.style.display = "none";
+  return;
+}
 
-      resultEl.textContent =
-        `${me.name}: ${me.result}\n${other.name}: ${other.result}`;
-    }
+/* 自分未実行・相手実行済 */
+if (!me.submitted && other.submitted) {
+  statusEl.textContent = "相手は入力済みです。入力してくださいんぽ";
+  inputArea.style.display = "block";
+  resultEl.style.display = "none";
+  rematchBtn.style.display = "none";
+  return;
+}
+
+/* 自分実行済・相手未実行 */
+if (me.submitted && !other.submitted) {
+  statusEl.textContent = "相手の入力を待っていますかき…";
+  inputArea.style.display = "none";
+  resultEl.style.display = "none";
+  rematchBtn.style.display = "none";
+  return;
+}
+
+/* ===== 結果発表（★ここが唯一の結果表示） ===== */
+if (
+  me.submitted && other.submitted &&
+  me.result && other.result
+) {
+  statusEl.textContent = "結果発表！";
+  inputArea.style.display = "none";
+  rematchBtn.style.display = "inline";
+  resultEl.style.display = "block";
+
+  const myScore = calcScore(me.result);
+  const otherScore = calcScore(other.result);
+
+  resultEl.textContent =
+    `${me.name}: ${me.result}（${myScore}点）\n` +
+    `${other.name}: ${other.result}（${otherScore}点）`;
+
+  return;
+}
+
   });
 }
 
@@ -234,6 +259,7 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
 
 
 
