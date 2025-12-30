@@ -10,20 +10,20 @@
 </head>
 <body>
 
-<h2>バトルルーム</h2>
+<h2>対戦ズリ（${roomId}）</h2>
 
 <p id="counts"></p>
 <p id="status"></p>
 
 <div id="inputArea" style="display:none">
   <input id="textInput" placeholder="文字を入力">
-  <button id="runBtn">実行</button>
+  <button id="runBtn">対戦ながお</button>
 </div>
 
 <pre id="result" style="display:none"></pre>
 
-<button id="rematchBtn" style="display:none">再戦</button>
-<button id="leaveBtn">退出</button>
+<button id="rematchBtn" style="display:none">再戦ながお</button>
+<button id="leaveBtn">退出ながお</button>
 
 <script>
 /* ===== Firebase ===== */
@@ -139,7 +139,7 @@ function setupListeners() {
       rematchBtn.style.display = "none";
 
       if (playerIds.length < 2) {
-        statusEl.textContent = "対戦者がそろうのを待っています…";
+        statusEl.textContent = "対戦者がそろうのを待っていますかき…";
         resultEl.style.display = "none";
         return;
       }
@@ -158,7 +158,7 @@ function setupListeners() {
           `${p1.name}: ${p1.result}（${calcScore(p1.result)}点）\n` +
           `${p2.name}: ${p2.result}（${calcScore(p2.result)}点）`;
       } else {
-        statusEl.textContent = "対戦中…";
+        statusEl.textContent = "対戦中しよ～～～～～…";
         resultEl.style.display = "none";
       }
       return;
@@ -170,7 +170,7 @@ function setupListeners() {
         submitted: false,
         result: ""
       });
-      statusEl.textContent = "対戦相手の参加を待っています…";
+      statusEl.textContent = "対戦相手の参加を待っていますかき…";
       inputArea.style.display = "none";
       resultEl.style.display = "none";
       rematchBtn.style.display = "none";
@@ -182,7 +182,7 @@ function setupListeners() {
     const other = players[otherId];
 
     if (!me.submitted && !other.submitted) {
-      statusEl.textContent = "入力して「実行」を押してください";
+      statusEl.textContent = "入力して「対戦ながお」を押してくださいんぽ";
       inputArea.style.display = "block";
       resultEl.style.display = "none";
       rematchBtn.style.display = "none";
@@ -190,13 +190,13 @@ function setupListeners() {
     }
 
     if (!me.submitted && other.submitted) {
-      statusEl.textContent = "相手は入力済みです。入力してください";
+      statusEl.textContent = "相手は入力済みです。入力してくださいんぽ";
       inputArea.style.display = "block";
       return;
     }
 
     if (me.submitted && !other.submitted) {
-      statusEl.textContent = "相手の入力を待っています…";
+      statusEl.textContent = "相手の入力を待っていますかき…";
       inputArea.style.display = "none";
       return;
     }
@@ -235,8 +235,28 @@ function calcScore(text) {
   if (!text) return 0;
   let score = 0;
   const hands = [
-    { pattern: "あい", point: 1 },
-    { pattern: "あいう", point: 2 }
+    { pattern: "なお", point: 1 },
+    { pattern: "おな", point: 1 },
+    { pattern: "ながお", point: 2 },
+    { pattern: "てるき", point: 2 },
+    { pattern: "てるお", point: 2 },
+    { pattern: "ながき", point: 2 },
+    { pattern: "ながてる", point: 3 },
+    { pattern: "ながおてるき", point: 5 },
+    { pattern: "ながおきてる", point: 5 },
+    { pattern: "なおがきてる", point: 5 },
+    { pattern: "おながきてる", point: 5 },
+    { pattern: "きてるおなが", point: 5 },
+    { pattern: "てるきながお", point: 5 },
+    { pattern: "おてがるなき", point: 5 },
+    { pattern: "なきがおてる", point: 5 },
+    { pattern: "てきがおなる", point: 5 },
+    { pattern: "おなるてきが", point: 5 },
+    { pattern: "てるおながき", point: 5 },
+    { pattern: "おなてるがき", point: 5 },
+    { pattern: "がきおなてる", point: 5 },
+    { pattern: "なるおてがき", point: 5 },
+    { pattern: "おきながてる", point: 5 }
   ];
   hands.forEach(h => {
     if (text.includes(h.pattern)) score += h.point;
@@ -246,3 +266,4 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
