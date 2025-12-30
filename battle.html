@@ -84,8 +84,17 @@ auth.signInAnonymously().then(res => {
       submitted: false,
       result: ""
     });
+
+   // タブを閉じたら自動で退出扱い
+    myRef.onDisconnect().remove();
+  
   } else {
-    spectatorsRef.child(uid).set(true);
+    const myRef = spectatorsRef.child(uid);
+
+    myRef.set(true);
+
+    // 観戦者もタブ閉じで自動退出
+    myRef.onDisconnect().remove();
   }
 
   setupListeners();
@@ -237,6 +246,18 @@ function cleanup() {
   if (roomRef) roomRef.off();
 }
 
+/* ===== タブ閉じ・ページ離脱時の保険 ===== */
+window.addEventListener("beforeunload", () => {
+  if (!uid) return;
+
+  const ref =
+    mode === "play"
+      ? playersRef.child(uid)
+      : spectatorsRef.child(uid);
+
+  ref.remove();
+});
+
 /* ===== util ===== */
 function shuffle(str) {
   const a = str.split("");
@@ -282,6 +303,7 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
 
 
 
