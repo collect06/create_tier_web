@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* 初回チェック */
-  if (localStorage.getItem("introSeen")) {
+  if (sessionStorage.getItem("introSeen")) {
     intro.style.display = "none";
     main.style.display = "block";
     return;
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* 動画終了 */
   video.addEventListener("ended", () => {
-    localStorage.setItem("introSeen", "true");
+    sessionStorage.setItem("introSeen", "true");
     intro.classList.add("fadeout");
 
     setTimeout(() => {
@@ -64,10 +64,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 5000);
 });
+
+function enter(mode) {
+  const name = document.getElementById("name").value;
+  const room = document.getElementById("room").value;
+
+  if (!name || !room) {
+    alert("名前と合言葉を入力してください");
+    return;
+  }
+
+  location.href = `battle.html?mode=${mode}&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+}
 </script>
 
 </body>
 </html>
+
 
 
 
