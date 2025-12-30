@@ -108,6 +108,13 @@ rematchBtn.onclick = () => {
 
 /* ===== 退出 ===== */
 leaveBtn.onclick = () => {
+  const message =
+    mode === "play"
+      ? "本当に退出しますか？（対戦は終了します）"
+      : "観戦を終了しますか？";
+
+  if (!confirm(message)) return;
+
   cleanup();
   const ref = mode === "play" ? playersRef : spectatorsRef;
   ref.child(uid).remove().then(() => {
