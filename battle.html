@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<h2>対戦ズリ（${roomId}）</h2>
+<h2 id="title"></h2>
 
 <p id="counts"></p>
 <p id="status"></p>
@@ -47,6 +47,7 @@ const name = params.get("name");
 const mode = params.get("mode"); // play / watch
 
 /* ===== DOM ===== */
+const title = document.getElementById("title");
 const statusEl = document.getElementById("status");
 const countsEl = document.getElementById("counts");
 const inputArea = document.getElementById("inputArea");
@@ -55,6 +56,8 @@ const runBtn = document.getElementById("runBtn");
 const resultEl = document.getElementById("result");
 const rematchBtn = document.getElementById("rematchBtn");
 const leaveBtn = document.getElementById("leaveBtn");
+
+title.textContent = `対戦ズリ（${roomId}）`;
 
 /* ===== 状態 ===== */
 let uid;
@@ -266,4 +269,5 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
 
