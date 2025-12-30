@@ -23,9 +23,14 @@
 
 <pre id="result" style="display:none"></pre>
 
-<button id="rematchBtn" style="display:none">再戦ながお</button>
-<button id="leaveBtn">退出ながお</button>
-
+<div id="actionArea">
+  <button id="rematchBtn" style="display:none">再戦ながお</button>
+</div>
+  
+<div id="dangerArea">
+  <button id="leaveBtn">退出ながお</button>
+</div>
+  
 <script>
 /* ===== Firebase ===== */
 const firebaseConfig = {
@@ -277,5 +282,6 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
 
 
