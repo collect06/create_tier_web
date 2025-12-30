@@ -10,18 +10,20 @@
 </head>
 <body>
 
-<h2 id="title">対戦ズリ</h2>
+<h2>バトルルーム</h2>
+
+<p id="counts"></p>
 <p id="status"></p>
 
 <div id="inputArea" style="display:none">
   <input id="textInput" placeholder="文字を入力">
-  <button id="runBtn">対戦ながお</button>
+  <button id="runBtn">実行</button>
 </div>
 
 <pre id="result" style="display:none"></pre>
 
-<button id="rematchBtn" style="display:none">再戦ながお</button>
-<button id="leaveBtn">退出ながお</button>
+<button id="rematchBtn" style="display:none">再戦</button>
+<button id="leaveBtn">退出</button>
 
 <script>
 /* ===== Firebase ===== */
@@ -41,11 +43,12 @@ const db = firebase.database();
 /* ===== URL ===== */
 const params = new URLSearchParams(location.search);
 const roomId = params.get("room");
-const playerName = params.get("name");
-const mode = params.get("mode");
+const name = params.get("name");
+const mode = params.get("mode"); // play / watch
 
 /* ===== DOM ===== */
 const statusEl = document.getElementById("status");
+const countsEl = document.getElementById("counts");
 const inputArea = document.getElementById("inputArea");
 const textInput = document.getElementById("textInput");
 const runBtn = document.getElementById("runBtn");
@@ -54,10 +57,9 @@ const rematchBtn = document.getElementById("rematchBtn");
 const leaveBtn = document.getElementById("leaveBtn");
 
 /* ===== 状態 ===== */
-let uid = null;
+let uid;
 let hasAppeared = false;
-let roomRef = null;
-let playersRef = null;
+let roomRef, playersRef, spectatorsRef;
 
 /* ===== 認証 ===== */
 auth.signInAnonymously().then(res => {
@@ -65,13 +67,16 @@ auth.signInAnonymously().then(res => {
 
   roomRef = db.ref(`rooms/${roomId}`);
   playersRef = roomRef.child("players");
+  spectatorsRef = roomRef.child("spectators");
 
   if (mode === "play") {
     playersRef.child(uid).set({
-      name: playerName,
+      name,
       submitted: false,
       result: ""
     });
+  } else {
+    spectatorsRef.child(uid).set(true);
   }
 
   setupListeners();
@@ -92,10 +97,7 @@ runBtn.onclick = () => {
 rematchBtn.onclick = () => {
   playersRef.once("value", snap => {
     snap.forEach(p => {
-      p.ref.update({
-        submitted: false,
-        result: ""
-      });
+      p.ref.update({ submitted: false, result: "" });
     });
   });
 };
@@ -103,7 +105,8 @@ rematchBtn.onclick = () => {
 /* ===== 退出 ===== */
 leaveBtn.onclick = () => {
   cleanup();
-  playersRef.child(uid).remove().then(() => {
+  const ref = mode === "play" ? playersRef : spectatorsRef;
+  ref.child(uid).remove().then(() => {
     location.href = "index.html";
   });
 };
@@ -112,154 +115,134 @@ leaveBtn.onclick = () => {
 function setupListeners() {
   roomRef.on("value", snap => {
     const data = snap.val();
-    if (!data || !data.players) return;
+    if (!data) return;
 
-    const players = data.players;
-    const ids = Object.keys(players);
+    const players = data.players || {};
+    const spectators = data.spectators || {};
+    const playerIds = Object.keys(players);
 
-    if (players[uid]) hasAppeared = true;
+    countsEl.textContent =
+      `参加者: ${playerIds.length}人 / 観戦者: ${Object.keys(spectators).length}人`;
 
-    /* 自分が消えた＝退出確定 */
-    if (hasAppeared && !players[uid]) {
-      cleanup();
-      location.href = "index.html";
+    if (mode === "play") {
+      if (players[uid]) hasAppeared = true;
+      if (hasAppeared && !players[uid]) {
+        cleanup();
+        location.href = "index.html";
+        return;
+      }
+    }
+
+    /* ===== 観戦モード ===== */
+    if (mode === "watch") {
+      inputArea.style.display = "none";
+      rematchBtn.style.display = "none";
+
+      if (playerIds.length < 2) {
+        statusEl.textContent = "対戦者がそろうのを待っています…";
+        resultEl.style.display = "none";
+        return;
+      }
+
+      const p1 = players[playerIds[0]];
+      const p2 = players[playerIds[1]];
+
+      if (
+        p1.submitted && p2.submitted &&
+        p1.result && p2.result
+      ) {
+        statusEl.textContent = "結果発表！";
+        resultEl.style.display = "block";
+
+        resultEl.textContent =
+          `${p1.name}: ${p1.result}（${calcScore(p1.result)}点）\n` +
+          `${p2.name}: ${p2.result}（${calcScore(p2.result)}点）`;
+      } else {
+        statusEl.textContent = "対戦中…";
+        resultEl.style.display = "none";
+      }
       return;
     }
 
-    /* 0人 → ルーム削除 */
-    if (ids.length === 0) {
-      roomRef.remove();
-      return;
-    }
-
-    /* 1人 → 初期状態 */
-    if (ids.length === 1) {
-      const onlyUid = ids[0];
-      playersRef.child(onlyUid).update({
+    /* ===== 対戦モード ===== */
+    if (playerIds.length === 1) {
+      playersRef.child(playerIds[0]).update({
         submitted: false,
         result: ""
       });
-
-      statusEl.textContent = "対戦相手の参加を待っていますかき…";
+      statusEl.textContent = "対戦相手の参加を待っています…";
       inputArea.style.display = "none";
       resultEl.style.display = "none";
       rematchBtn.style.display = "none";
       return;
     }
 
-    /* ===== 2人対戦 ===== */
-const me = players[uid];
-const opponentId = ids.find(id => id !== uid);
-const other = players[opponentId];
+    const me = players[uid];
+    const otherId = playerIds.find(id => id !== uid);
+    const other = players[otherId];
 
-/* 両者未実行 */
-if (!me.submitted && !other.submitted) {
-  statusEl.textContent = "入力して「対戦ながお」を押してくださいんぽ";
-  inputArea.style.display = "block";
-  resultEl.style.display = "none";
-  rematchBtn.style.display = "none";
-  return;
-}
+    if (!me.submitted && !other.submitted) {
+      statusEl.textContent = "入力して「実行」を押してください";
+      inputArea.style.display = "block";
+      resultEl.style.display = "none";
+      rematchBtn.style.display = "none";
+      return;
+    }
 
-/* 自分未実行・相手実行済 */
-if (!me.submitted && other.submitted) {
-  statusEl.textContent = "相手は入力済みです。入力してくださいんぽ";
-  inputArea.style.display = "block";
-  resultEl.style.display = "none";
-  rematchBtn.style.display = "none";
-  return;
-}
+    if (!me.submitted && other.submitted) {
+      statusEl.textContent = "相手は入力済みです。入力してください";
+      inputArea.style.display = "block";
+      return;
+    }
 
-/* 自分実行済・相手未実行 */
-if (me.submitted && !other.submitted) {
-  statusEl.textContent = "相手の入力を待っていますかき…";
-  inputArea.style.display = "none";
-  resultEl.style.display = "none";
-  rematchBtn.style.display = "none";
-  return;
-}
+    if (me.submitted && !other.submitted) {
+      statusEl.textContent = "相手の入力を待っています…";
+      inputArea.style.display = "none";
+      return;
+    }
 
-/* ===== 結果発表（★ここが唯一の結果表示） ===== */
-if (
-  me.submitted && other.submitted &&
-  me.result && other.result
-) {
-  statusEl.textContent = "結果発表！";
-  inputArea.style.display = "none";
-  rematchBtn.style.display = "inline";
-  resultEl.style.display = "block";
+    if (
+      me.submitted && other.submitted &&
+      me.result && other.result
+    ) {
+      statusEl.textContent = "結果発表！";
+      inputArea.style.display = "none";
+      rematchBtn.style.display = "inline";
+      resultEl.style.display = "block";
 
-  const myScore = calcScore(me.result);
-  const otherScore = calcScore(other.result);
-
-  resultEl.textContent =
-    `${me.name}: ${me.result}（${myScore}点）\n` +
-    `${other.name}: ${other.result}（${otherScore}点）`;
-
-  return;
-}
-
+      resultEl.textContent =
+        `${me.name}: ${me.result}（${calcScore(me.result)}点）\n` +
+        `${other.name}: ${other.result}（${calcScore(other.result)}点）`;
+    }
   });
 }
 
-/* ===== 後始末 ===== */
 function cleanup() {
   if (roomRef) roomRef.off();
 }
 
-/* ===== シャッフル ===== */
+/* ===== util ===== */
 function shuffle(str) {
-  const arr = str.split("");
-  for (let i = arr.length - 1; i > 0; i--) {
+  const a = str.split("");
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return arr.join("");
+  return a.join("");
 }
 
-/* ===== 点数計算（役） ===== */
 function calcScore(text) {
   if (!text) return 0;
   let score = 0;
-
-  // 役定義（ここを増やすだけ）
   const hands = [
-    { pattern: "なお", point: 1 },
-    { pattern: "おな", point: 1 },
-    { pattern: "ながお", point: 2 },
-    { pattern: "てるき", point: 2 },
-    { pattern: "てるお", point: 2 },
-    { pattern: "ながき", point: 2 },
-    { pattern: "ながてる", point: 3 },
-    { pattern: "ながおてるき", point: 5 },
-    { pattern: "ながおきてる", point: 5 },
-    { pattern: "なおがきてる", point: 5 },
-    { pattern: "おながきてる", point: 5 },
-    { pattern: "きてるおなが", point: 5 },
-    { pattern: "てるきながお", point: 5 },
-    { pattern: "おてがるなき", point: 5 },
-    { pattern: "なきがおてる", point: 5 },
-    { pattern: "てきがおなる", point: 5 },
-    { pattern: "おなるてきが", point: 5 },
-    { pattern: "てるおながき", point: 5 },
-    { pattern: "おなてるがき", point: 5 },
-    { pattern: "がきおなてる", point: 5 },
-    { pattern: "なるおてがき", point: 5 },
-    { pattern: "おきながてる", point: 5 }
+    { pattern: "あい", point: 1 },
+    { pattern: "あいう", point: 2 }
   ];
-
   hands.forEach(h => {
-    if (text.includes(h.pattern)) {
-      score += h.point;
-    }
+    if (text.includes(h.pattern)) score += h.point;
   });
-
   return score;
 }
 </script>
 </body>
 </html>
-
-
-
-
