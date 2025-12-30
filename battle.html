@@ -79,7 +79,8 @@ auth.signInAnonymously().then(res => {
   spectatorsRef = roomRef.child("spectators");
 
   if (mode === "play") {
-    playersRef.child(uid).set({
+    const myRef = playersRef.child(uid);
+    myRef.set({
       name,
       submitted: false,
       result: ""
@@ -303,6 +304,7 @@ function calcScore(text) {
 </script>
 </body>
 </html>
+
 
 
 
