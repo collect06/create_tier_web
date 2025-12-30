@@ -1,0 +1,12 @@
+#actionArea {
+  margin-top: 20px;
+}
+
+#dangerArea {
+  margin-top: 60px;
+}
+
+#dangerArea button {
+  background: #f44336;
+  color: white;
+}
