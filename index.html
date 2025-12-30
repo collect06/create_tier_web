@@ -5,6 +5,12 @@
 <title>ルーム選択</title>
 </head>
 <body>
+  
+  <div id="intro">
+  <video id="introVideo" autoplay muted playsinline>
+    <source src="video/intro.mp4" type="video/mp4">
+  </video>
+</div>
 
 <h2>ながおありがとう</h2>
 
@@ -13,50 +19,54 @@
 
 <button onclick="enter('play')">参加</button>
 <button onclick="enter('watch')">観戦</button>
-
-<video id="introVideo" autoplay muted playsinline>
-  <source src="video/intro.mp4" type="video/mp4">
-</video>
   
 <script>
-const intro = document.getElementById("intro");
-const video = document.getElementById("introVideo");
+document.addEventListener("DOMContentLoaded", () => {
+  const intro = document.getElementById("intro");
+  const video = document.getElementById("introVideo");
+  const main = document.getElementById("mainContent");
 
-/* すでに見ていればスキップ */
-if (localStorage.getItem("introSeen")) {
-  intro.style.display = "none";
-} else {
-  /* 動画終了でフェードアウト */
-  video.addEventListener("ended", () => {
-    localStorage.setItem("introSeen", "true");
-    intro.classList.add("fadeout");
-  });
-
-  /* 念のため強制終了（5秒） */
-  setTimeout(() => {
-    localStorage.setItem("introSeen", "true");
-    intro.classList.add("fadeout");
-  }, 5000);
-}
-
-function enter(mode) {
-  const name = nameInput.value.trim();
-  const room = roomInput.value.trim();
-  if (!room || (mode === 'play' && !name)) {
-    alert("入力不足");
+  if (!intro || !video || !main) {
+    console.error("intro / video / mainContent が見つかりません");
     return;
   }
 
-  location.href =
-    `battle.html?room=${encodeURIComponent(room)}&name=${encodeURIComponent(name)}&mode=${mode}`;
-}
+  /* 初回チェック */
+  if (localStorage.getItem("introSeen")) {
+    intro.style.display = "none";
+    main.style.display = "block";
+    return;
+  }
 
-const nameInput = document.getElementById("name");
-const roomInput = document.getElementById("room");
+  /* 動画終了 */
+  video.addEventListener("ended", () => {
+    localStorage.setItem("introSeen", "true");
+    intro.classList.add("fadeout");
+
+    setTimeout(() => {
+      intro.style.display = "none";
+      main.style.display = "block";
+    }, 1000);
+  });
+
+  /* 念のための保険 */
+  setTimeout(() => {
+    if (!localStorage.getItem("introSeen")) {
+      localStorage.setItem("introSeen", "true");
+      intro.classList.add("fadeout");
+
+      setTimeout(() => {
+        intro.style.display = "none";
+        main.style.display = "block";
+      }, 1000);
+    }
+  }, 5000);
+});
 </script>
 
 </body>
 </html>
+
 
 
 
