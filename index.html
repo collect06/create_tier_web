@@ -14,7 +14,31 @@
 <button onclick="enter('play')">参加</button>
 <button onclick="enter('watch')">観戦</button>
 
+<video id="introVideo" autoplay muted playsinline>
+  <source src="videos/intro.mp4" type="video/mp4">
+</video>
+  
 <script>
+const intro = document.getElementById("intro");
+const video = document.getElementById("introVideo");
+
+/* すでに見ていればスキップ */
+if (localStorage.getItem("introSeen")) {
+  intro.style.display = "none";
+} else {
+  /* 動画終了でフェードアウト */
+  video.addEventListener("ended", () => {
+    localStorage.setItem("introSeen", "true");
+    intro.classList.add("fadeout");
+  });
+
+  /* 念のため強制終了（5秒） */
+  setTimeout(() => {
+    localStorage.setItem("introSeen", "true");
+    intro.classList.add("fadeout");
+  }, 5000);
+}
+
 function enter(mode) {
   const name = nameInput.value.trim();
   const room = roomInput.value.trim();
@@ -33,4 +57,5 @@ const roomInput = document.getElementById("room");
 
 </body>
 </html>
+
 
