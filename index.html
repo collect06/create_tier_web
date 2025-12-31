@@ -47,6 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 300);
 });
 
+  video.addEventListener("ended", () => {
+  skipBtn.style.display = "none";
+});
+
 
   if (!intro || !video || !main) {
     console.error("intro / video / mainContent が見つかりません");
