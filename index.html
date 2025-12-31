@@ -31,7 +31,7 @@
 </div>
   
 <script>
-/* ===== 参加・観戦（グローバル） ===== */
+/* ===== 参加・観戦 ===== */
 function enter(mode) {
   const name = document.getElementById("name").value;
   const room = document.getElementById("room").value;
@@ -54,27 +54,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const main = document.getElementById("mainContent");
   const skipBtn = document.getElementById("skipBtn");
 
-  const seen = localStorage.getItem("introSeen") === "true";
+  if (!intro || !video || !main) return;
 
+  const seen = sessionStorage.getItem("introSeen") === "true";
+
+  /* すでに見た場合 */
   if (seen) {
-    intro.remove();
+    intro.style.display = "none";
     main.style.display = "block";
     return;
   }
 
-  /* 初回のみ */
+  /* 初回 */
   intro.style.display = "flex";
   main.style.display = "none";
 
-  // autoplay 保険（失敗してもOK）
+  video.currentTime = 0;
   video.play().catch(() => {});
 
   function finishIntro() {
-    localStorage.setItem("introSeen", "true");
+    sessionStorage.setItem("introSeen", "true");
     intro.classList.add("fadeout");
-
     setTimeout(() => {
-      intro.remove();
+      intro.style.display = "none";
       main.style.display = "block";
     }, 1000);
   }
@@ -83,9 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
   skipBtn.addEventListener("click", finishIntro);
 });
 </script>
+
 </div>
 </body>
 </html>
+
 
 
 
