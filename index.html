@@ -30,6 +30,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const intro = document.getElementById("intro");
   const video = document.getElementById("introVideo");
   const main = document.getElementById("mainContent");
+  const skipBtn = document.getElementById("skipBtn");
+
+/* スキップボタン */
+  skipBtn.addEventListener("click", () => {
+  localStorage.setItem("introSeen", "true");
+
+  video.pause();
+  video.currentTime = 0;
+
+  intro.classList.add("fadeout");
+
+  setTimeout(() => {
+    intro.style.display = "none";
+    main.style.display = "block";
+  }, 300);
+});
+
 
   if (!intro || !video || !main) {
     console.error("intro / video / mainContent が見つかりません");
