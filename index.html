@@ -32,64 +32,33 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const intro = document.getElementById("intro");
-  const video = document.getElementById("introVideo");
   const main = document.getElementById("mainContent");
+  const video = document.getElementById("introVideo");
   const skipBtn = document.getElementById("skipBtn");
 
-  if (!intro || !video || !main || !skipBtn) {
-    console.error("intro / video / mainContent / skipBtn が見つかりません");
-    return;
-  }
+  const seen = localStorage.getItem("introSeen") === "true";
 
-  /* ===== すでに見た場合は即本編 ===== */
-  if (localStorage.getItem("introSeen")) {
+  if (seen) {
     intro.style.display = "none";
     main.style.display = "block";
     return;
   }
 
-  /* ===== 初回のみ動画表示 ===== */
   intro.style.display = "block";
   main.style.display = "none";
 
-  video.play().catch(() => {
-    // 自動再生できない端末用（何もしなくてOK）
-  });
-
-  /* 共通終了処理 */
   function finishIntro() {
     localStorage.setItem("introSeen", "true");
-
     intro.classList.add("fadeout");
-
     setTimeout(() => {
       intro.style.display = "none";
       main.style.display = "block";
     }, 1000);
   }
 
-  /* 動画終了 */
   video.addEventListener("ended", finishIntro);
-
-  /* スキップボタン */
   skipBtn.addEventListener("click", finishIntro);
 });
-
-/* ===== 参加 / 観戦 ===== */
-function enter(mode) {
-  const name = document.getElementById("name").value;
-  const room = document.getElementById("room").value;
-
-  if (!name || !room) {
-    alert("名前と合言葉を入力してください");
-    return;
-  }
-
-  location.href =
-    `battle.html?mode=${mode}` +
-    `&name=${encodeURIComponent(name)}` +
-    `&room=${encodeURIComponent(room)}`;
-}
 </script>
 </div>
 </body>
