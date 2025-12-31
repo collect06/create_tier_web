@@ -63,15 +63,6 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* 全体を1画面に収めるラッパー想定 */
-#mainContent,
-body > div {
-  width: 100%;
-  max-width: 420px;        /* スマホ最大幅 */
-  padding: 4vh 4vw;
-  box-sizing: border-box;
-}
-
 /* ===============================
    見出し
    =============================== */
