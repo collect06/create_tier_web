@@ -40,3 +40,139 @@
   display: none;
 }
 
+/* ===============================
+   共通：スマホ最適化ベース
+   =============================== */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-size: 16px;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #111;
+  color: #fff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 全体を1画面に収めるラッパー想定 */
+#mainContent,
+body > div {
+  width: 100%;
+  max-width: 420px;        /* スマホ最大幅 */
+  padding: 4vh 4vw;
+  box-sizing: border-box;
+}
+
+/* ===============================
+   見出し
+   =============================== */
+
+h1, h2 {
+  text-align: center;
+  margin: 0 0 3vh;
+  font-size: 6vw;
+  line-height: 1.2;
+}
+
+/* ===============================
+   テキスト・ステータス
+   =============================== */
+
+p, #status, #counts {
+  text-align: center;
+  margin: 1.5vh 0;
+  font-size: 4.5vw;
+}
+
+/* ===============================
+   入力欄
+   =============================== */
+
+input {
+  width: 100%;
+  font-size: 5vw;
+  padding: 1.2vh 1vw;
+  margin-top: 1vh;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: none;
+}
+
+/* ===============================
+   ボタン共通
+   =============================== */
+
+button {
+  width: 100%;
+  font-size: 5.2vw;
+  padding: 1.5vh 0;
+  margin-top: 2vh;
+  border-radius: 10px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+}
+
+/* ===============================
+   バトル画面専用
+   =============================== */
+
+#inputArea {
+  margin-top: 3vh;
+}
+
+#result {
+  margin-top: 3vh;
+  font-size: 4.8vw;
+  white-space: pre-line;
+  text-align: center;
+}
+
+/* ===============================
+   アクションエリア
+   =============================== */
+
+#actionArea {
+  margin-top: 3vh;
+}
+
+/* ===============================
+   危険エリア（退出）
+   =============================== */
+
+#dangerArea {
+  margin-top: 6vh;
+}
+
+#dangerArea button {
+  background: #f44336;
+}
+
+/* ===============================
+   PCでは少し抑える
+   =============================== */
+
+@media (min-width: 768px) {
+  h1, h2 {
+    font-size: 32px;
+  }
+
+  p, #status, #counts {
+    font-size: 18px;
+  }
+
+  input, button {
+    font-size: 18px;
+  }
+
+  #result {
+    font-size: 18px;
+  }
+}
