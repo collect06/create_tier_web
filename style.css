@@ -179,8 +179,8 @@ button {
   transform: translateX(-50%);
 
   /* サイズ調整 */
-  padding: 20px 36px;   /* ← 縦を大きく */
-  font-size: 20px;      /* ← 文字を大きく */
+  padding: 24px 44px;   /* ← 縦を大きく */
+  font-size: 22px;      /* ← 文字を大きく */
   
   font-weight: bold;
   border-radius: 999px;
