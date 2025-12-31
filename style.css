@@ -174,17 +174,19 @@ button {
 /* ===== スキップボタン ===== */
 #skipBtn {
   position: fixed;
-  right: 4vw;
-  bottom: 4vh;
-  z-index: 10000;
+  bottom: 20px;
 
-  font-size: 4vw;
-  padding: 1vh 3vw;
+  left: 50%;
+  transform: translateX(-50%);
 
-  border: none;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.6);
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 999px;
+
+  background: rgba(0,0,0,0.6);
   color: white;
+  border: 1px solid white;
+  z-index: 10000;
 }
 
 /* ===== index 専用 ===== */
