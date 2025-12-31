@@ -55,8 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const skipBtn = document.getElementById("skipBtn");
 
   const seen = localStorage.getItem("introSeen") === "true";
-}
-
 
   if (seen) {
     intro.remove();
@@ -64,18 +62,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // 初回のみ
-  intro.style.display = "flex"; // ★ 明示的に表示
+  /* 初回のみ */
+  intro.style.display = "flex";
   main.style.display = "none";
-  
-  // autoplay 保険
+
+  // autoplay 保険（失敗してもOK）
   video.play().catch(() => {});
 
   function finishIntro() {
     localStorage.setItem("introSeen", "true");
     intro.classList.add("fadeout");
+
     setTimeout(() => {
-      intro.style.display = "none";
       intro.remove();
       main.style.display = "block";
     }, 1000);
