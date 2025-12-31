@@ -8,15 +8,14 @@
 <body>
 <div id="indexPage">
   
-<div id="intro">
-  <video id="introVideo" autoplay muted playsinline>
+<div id="intro" style="display:none">
+  <video id="introVideo" muted playsinline>
     <source src="video/intro.mp4" type="video/mp4">
   </video>
-  
   <button id="skipBtn">SKIP</button>
 </div>
 
-<div id="mainContent">
+<div id="mainContent" style="display:none">
   <h2>ながおありがとう</h2>
 
   <p>名前：<input id="name"></p>
@@ -33,63 +32,46 @@ document.addEventListener("DOMContentLoaded", () => {
   const main = document.getElementById("mainContent");
   const skipBtn = document.getElementById("skipBtn");
 
-/* スキップボタン */
-  skipBtn.addEventListener("click", () => {
-  localStorage.setItem("introSeen", "true");
-
-  video.pause();
-  video.currentTime = 0;
-
-  intro.classList.add("fadeout");
-
-  setTimeout(() => {
-    intro.style.display = "none";
-    main.style.display = "block";
-  }, 300);
-});
-
-  video.addEventListener("ended", () => {
-  skipBtn.style.display = "none";
-});
-
-
-  if (!intro || !video || !main) {
-    console.error("intro / video / mainContent が見つかりません");
+  if (!intro || !video || !main || !skipBtn) {
+    console.error("intro / video / mainContent / skipBtn が見つかりません");
     return;
   }
 
-  /* 初回チェック */
-  if (sessionStorage.getItem("introSeen")) {
+  /* ===== すでに見た場合は即本編 ===== */
+  if (localStorage.getItem("introSeen")) {
     intro.style.display = "none";
     main.style.display = "block";
     return;
   }
 
-  /* 動画終了 */
-  video.addEventListener("ended", () => {
-    sessionStorage.setItem("introSeen", "true");
+  /* ===== 初回のみ動画表示 ===== */
+  intro.style.display = "block";
+  main.style.display = "none";
+
+  video.play().catch(() => {
+    // 自動再生できない端末用（何もしなくてOK）
+  });
+
+  /* 共通終了処理 */
+  function finishIntro() {
+    localStorage.setItem("introSeen", "true");
+
     intro.classList.add("fadeout");
 
     setTimeout(() => {
       intro.style.display = "none";
       main.style.display = "block";
     }, 1000);
-  });
+  }
 
-  /* 念のための保険 */
-  setTimeout(() => {
-    if (!localStorage.getItem("introSeen")) {
-      localStorage.setItem("introSeen", "true");
-      intro.classList.add("fadeout");
+  /* 動画終了 */
+  video.addEventListener("ended", finishIntro);
 
-      setTimeout(() => {
-        intro.style.display = "none";
-        main.style.display = "block";
-      }, 1000);
-    }
-  }, 5000);
+  /* スキップボタン */
+  skipBtn.addEventListener("click", finishIntro);
 });
 
+/* ===== 参加 / 観戦 ===== */
 function enter(mode) {
   const name = document.getElementById("name").value;
   const room = document.getElementById("room").value;
@@ -99,7 +81,10 @@ function enter(mode) {
     return;
   }
 
-  location.href = `battle.html?mode=${mode}&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+  location.href =
+    `battle.html?mode=${mode}` +
+    `&name=${encodeURIComponent(name)}` +
+    `&room=${encodeURIComponent(room)}`;
 }
 </script>
 </div>
