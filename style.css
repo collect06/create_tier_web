@@ -208,17 +208,21 @@ button {
   width: 100%;
   max-width: 420px;
   padding: 4vh 4vw;
+  box-sizing: border-box;
 }
 
 /* ===== battle 専用 ===== */
 #battlePage {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;     /* 縦方向中央 */
+  align-items: center;         /* 横方向中央 */
   padding: 4vh 4vw;
   box-sizing: border-box;
 }
 
 #battlePage > * {
+  width: 100%;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
 }
