@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <title>ルーム選択</title>
 <link rel="stylesheet" href="style.css">
+  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="indexPage">
@@ -31,21 +34,40 @@
 </div>
   
 <script>
-/* ===== 参加・観戦 ===== */
 function enter(mode) {
-  const name = document.getElementById("name").value;
-  const room = document.getElementById("room").value;
+  const name = document.getElementById("name").value.trim();
+  const room = document.getElementById("room").value.trim();
 
   if (!name || !room) {
     alert("名前と合言葉を入力してください");
     return;
   }
 
-  location.href =
-    `battle.html?mode=${mode}` +
-    `&name=${encodeURIComponent(name)}` +
-    `&room=${encodeURIComponent(room)}`;
+  // 観戦はそのままOK
+  if (mode === "watch") {
+    location.href =
+      `battle.html?mode=watch&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+    return;
+  }
+
+  // ===== 参加人数チェック =====
+  const playersRef = db.ref(`rooms/${room}/players`);
+
+  playersRef.once("value").then(snap => {
+    const players = snap.val() || {};
+    const count = Object.keys(players).length;
+
+    if (count >= 2) {
+      alert("このルームは満員です。\n観戦モードをご利用ください。");
+      return;
+    }
+
+    // 入室OK
+    location.href =
+      `battle.html?mode=play&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+  });
 }
+
 
 /* ===== intro 制御 ===== */
 document.addEventListener("DOMContentLoaded", () => {
