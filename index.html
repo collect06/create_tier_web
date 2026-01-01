@@ -34,6 +34,20 @@
 </div>
   
 <script>
+/* ===== Firebase ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
+  authDomain: "create-tier.firebaseapp.com",
+  projectId: "create-tier",
+  storageBucket: "create-tier.firebasestorage.app",
+  messagingSenderId: "267436992720",
+  appId: "1:267436992720:web:fe5c825719bce282a8d6d5"
+};
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+
+
 function enter(mode) {
   const name = document.getElementById("name").value.trim();
   const room = document.getElementById("room").value.trim();
