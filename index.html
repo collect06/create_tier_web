@@ -38,6 +38,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCzU2Gv2cVxtkYdG4G4iWBf-vilMLUblIM",
   authDomain: "create-tier.firebaseapp.com",
+  databaseURL: "https://create-tier-default-rtdb.firebaseio.com",
   projectId: "create-tier",
   storageBucket: "create-tier.firebasestorage.app",
   messagingSenderId: "267436992720",
@@ -57,29 +58,29 @@ function enter(mode) {
     return;
   }
 
-  // 観戦はそのままOK
   if (mode === "watch") {
     location.href =
       `battle.html?mode=watch&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
     return;
   }
 
-  // ===== 参加人数チェック =====
   const playersRef = db.ref(`rooms/${room}/players`);
 
-  playersRef.once("value").then(snap => {
-    const players = snap.val() || {};
-    const count = Object.keys(players).length;
+  playersRef.once("value")
+    .then(snap => {
+      const players = snap.val() || {};
+      if (Object.keys(players).length >= 2) {
+        alert("このルームは満員です。\n観戦モードをご利用ください。");
+        return;
+      }
 
-    if (count >= 2) {
-      alert("このルームは満員です。\n観戦モードをご利用ください。");
-      return;
-    }
-
-    // 入室OK
-    location.href =
-      `battle.html?mode=play&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
-  });
+      location.href =
+        `battle.html?mode=play&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+    })
+    .catch(err => {
+      console.error(err);
+      alert("接続エラーが発生しました");
+    });
 }
 
 
