@@ -67,20 +67,23 @@ function enter(mode) {
   const playersRef = db.ref(`rooms/${room}/players`);
 
   playersRef.once("value")
-    .then(snap => {
-      const players = snap.val() || {};
-      if (Object.keys(players).length >= 2) {
-        alert("このルームは満員です。\n観戦モードをご利用ください。");
-        return;
-      }
+  .then(snap => {
+    console.log("Firebase応答あり");
+    const players = snap.val() || {};
+    const count = Object.keys(players).length;
 
-      location.href =
-        `battle.html?mode=play&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
-    })
-    .catch(err => {
-      console.error(err);
-      alert("接続エラーが発生しました");
-    });
+    if (count >= 2) {
+      alert("このルームは満員です。");
+      return;
+    }
+
+    location.href =
+      `battle.html?mode=play&name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+  })
+  .catch(err => {
+    alert("Firebase 接続エラー");
+    console.error("Firebase error:", err);
+  });
 }
 
 
